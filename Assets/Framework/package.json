@@ -1,0 +1,14 @@
+{
+    "name": "cn.ivaldi.framework",
+    "version": "1.0.0",
+    "displayName": "Snake Framework",
+    "description": "This is kexiang's game develop framework",
+    "unity": "2022.3",
+    "dependencies": {},
+   "keywords": [],
+    "author": {
+      "name": "KeXiang",
+      "email": "keekekx@gmail.com",
+      "url": "https://www.ivaldi.cn"
+    }
+  }
