@@ -34,6 +34,7 @@
 ExportedObj/
 .consulo/
 *.csproj
+*.csproj.DotSettings
 *.unityproj
 *.sln
 *.suo
@@ -72,3 +73,4 @@ crashlytics-build.properties
 /[Aa]ssets/[Ss]treamingAssets/aa.meta
 /[Aa]ssets/[Ss]treamingAssets/aa/*
 
+/.idea/
