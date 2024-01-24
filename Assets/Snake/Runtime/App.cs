@@ -8,6 +8,8 @@ namespace Snake
 {
     public partial class App : MonoBehaviour, ISingleton
     {
+        public static App Instance => SingletonMonoObjectPool<App>.Get();
+
         /// <summary>
         /// 程序暂停通知
         /// </summary>
