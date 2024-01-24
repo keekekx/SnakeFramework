@@ -1,30 +1,150 @@
 ﻿using System;
 using System.Net;
 using System.Net.Sockets;
-using System.Threading;
 using System.Threading.Tasks;
+using Snake.Logger;
 
 namespace Snake.Net
 {
     public class TcpClient<T>
     {
-        private readonly Socket _socket = new(IPAddress.Any.AddressFamily, SocketType.Stream, ProtocolType.Tcp);
-        private readonly CancellationToken _cancellationToken = CancellationToken.None;
-        private Session<T> _session;
+        private Socket _socket;
+        private readonly IPackageProxy<T> _packageProxy;
+        private const int BufferMax = 4096;
+        private readonly byte[] _buffer;
+        private int _readPointer;
+        private int _buffedCount;
 
-        public async Task Connect(IPEndPoint point, IHandler<T> handler, IEncoder<T> encoder, IDecoder<T> decoder)
+        private IPEndPoint _remote;
+
+        public bool Connected => _packageProxy.Connected;
+
+        public TcpClient(IPackageProxy<T> proxy, Socket socket = null)
         {
-            Console.WriteLine("开始连接服务器");
-            _socket.NoDelay = true;
-            await _socket.ConnectAsync(point);
-            _session = new Session<T>(_socket, handler, encoder, decoder);
-            Console.WriteLine("连接成功");
-            _session.Start(4096, _cancellationToken);
+            _packageProxy = proxy;
+            _socket = socket;
+            _buffer = new byte[BufferMax];
         }
 
-        public async void Send(T msg)
+        public async Task Reconnect()
         {
-            await _session.Send(msg);
+            if (_remote == null)
+            {
+                Log.Warn("服务器维护的客户端链接，不需要重连");
+                return;
+            }
+
+            await Task.Delay(TimeSpan.FromSeconds(3f));
+            await Connect(_remote);
+        }
+
+        public async Task Connect(IPEndPoint point)
+        {
+            _remote = point;
+            try
+            {
+                _socket = new Socket(IPAddress.Any.AddressFamily, SocketType.Stream, ProtocolType.Tcp);
+                _socket.NoDelay = true;
+                Log.Debug("开始连接服务器");
+                await _socket.ConnectAsync(point);
+                _packageProxy.Active(this);
+            }
+            catch (SocketException e)
+            {
+                Log.Error(e);
+                _packageProxy.Inactive(this, -2);
+            }
+            catch (ObjectDisposedException)
+            {
+            }
+            catch (Exception e)
+            {
+                Log.Error(e);
+            }
+        }
+
+        /// <summary>
+        /// 服务器的客户端连接开始接受消息
+        /// </summary>
+        public void BeginReceive()
+        {
+            _packageProxy.Active(this);
+            Receive();
+        }
+
+        public void Receive()
+        {
+            _socket.BeginReceive(_buffer, _readPointer, BufferMax - _buffedCount, SocketFlags.None, OnReceive,
+                                 null);
+        }
+
+        private void OnReceive(IAsyncResult ar)
+        {
+            try
+            {
+                var len = _socket.EndReceive(ar);
+                _readPointer += len;
+                _buffedCount += len;
+                while (_buffedCount > 0)
+                {
+                    var used = _packageProxy.Decode(_buffer[.._buffedCount], out var msg);
+                    if (used <= 0)
+                    {
+                        break;
+                    }
+
+                    Array.Copy(_buffer, used, _buffer, 0, _buffedCount - used);
+                    _readPointer -= used;
+                    _buffedCount -= used;
+                    _packageProxy.ReadMessage(msg);
+                }
+
+                Receive();
+            }
+            catch (ObjectDisposedException)
+            {
+            }
+            catch (Exception e)
+            {
+                Log.Error(e);
+                Disable();
+            }
+        }
+
+        public void Send(T msg)
+        {
+            try
+            {
+                _packageProxy.Encode(msg, out var buffer);
+                _socket.Send(buffer);
+            }
+            catch (Exception e)
+            {
+                Log.Error(e);
+            }
+        }
+
+        private void Disable()
+        {
+            _packageProxy.Inactive(this, -1);
+        }
+
+        public void Close()
+        {
+            try
+            {
+                _packageProxy.Inactive(this, 0);
+                if (_socket.Connected)
+                {
+                    _socket.Shutdown(SocketShutdown.Both);
+                }
+
+                _socket.Close();
+            }
+            catch (Exception e)
+            {
+                Log.Error(e);
+            }
         }
     }
 }
