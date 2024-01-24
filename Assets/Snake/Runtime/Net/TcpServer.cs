@@ -2,7 +2,6 @@
 using System.Net;
 using System.Net.Sockets;
 using System.Threading;
-using System.Threading.Tasks;
 using Snake.Logger;
 
 namespace Snake.Net
@@ -20,8 +19,9 @@ namespace Snake.Net
             {
                 Log.Debug("等待客户端");
                 var socket = await _socket.AcceptAsync();
+                Log.Debug("客户端进入服务器");
                 var client = factory?.Invoke(socket);
-                client!.BeginReceive();
+                client!.ClientStart();
             }
         }
     }

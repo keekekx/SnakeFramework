@@ -63,17 +63,14 @@ namespace Snake.Net
             }
         }
 
-        /// <summary>
-        /// 服务器的客户端连接开始接受消息
-        /// </summary>
-        public void BeginReceive()
+        public void ClientStart()
         {
             _packageProxy.Active(this);
-            Receive();
         }
 
         public void Receive()
         {
+            Log.Debug("Receive");
             _socket.BeginReceive(_buffer, _readPointer, BufferMax - _buffedCount, SocketFlags.None, OnReceive,
                                  null);
         }
@@ -96,10 +93,15 @@ namespace Snake.Net
                     Array.Copy(_buffer, used, _buffer, 0, _buffedCount - used);
                     _readPointer -= used;
                     _buffedCount -= used;
-                    _packageProxy.ReadMessage(msg);
+                    _packageProxy.ReadMessage(msg, this);
                 }
 
                 Receive();
+            }
+            catch (SocketException e)
+            {
+                Log.Error(e.SocketErrorCode);
+                _packageProxy.Inactive(this, -1);
             }
             catch (ObjectDisposedException)
             {
@@ -107,7 +109,6 @@ namespace Snake.Net
             catch (Exception e)
             {
                 Log.Error(e);
-                Disable();
             }
         }
 
@@ -122,11 +123,6 @@ namespace Snake.Net
             {
                 Log.Error(e);
             }
-        }
-
-        private void Disable()
-        {
-            _packageProxy.Inactive(this, -1);
         }
 
         public void Close()

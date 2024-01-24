@@ -11,12 +11,12 @@ public class ServerTest : MonoBehaviour
 
     async void Start()
     {
-        // _tcpServer = new TcpServer<NetMessage>();
-        // _tcpServer.Start(8890, socket => new TcpClient<NetMessage>(new TcpPackageProxy(), socket));
+        _tcpServer = new TcpServer<NetMessage>();
+        _tcpServer.Start(8890, socket => new TcpClient<NetMessage>(new TcpPackageProxy(), socket));
 
         _tcpClient = new TcpClient<NetMessage>(new TcpPackageProxy());
-        var ip = IPAddress.Loopback;
-        await _tcpClient.Connect(new IPEndPoint(ip, 8890));
+        // var ip = IPAddress.Loopback;
+        // await _tcpClient.Connect(new IPEndPoint(ip, 8890));
     }
 
     private void Update()

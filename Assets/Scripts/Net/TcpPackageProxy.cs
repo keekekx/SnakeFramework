@@ -52,9 +52,10 @@ namespace Net
             Connected = true;
         }
 
-        public void ReadMessage(NetMessage message)
+        public void ReadMessage(NetMessage message, TcpClient<NetMessage> client)
         {
             Log.Debug(message.Message);
+            client.Send(message);
         }
 
         public async void Inactive(TcpClient<NetMessage> client, int state)
