@@ -10,6 +10,22 @@ namespace Snake
     {
         public static App Instance => SingletonMonoObjectPool<App>.Get();
 
+        #region Blackboard
+
+        private readonly Dictionary<string, object> _sharedBlackboard = new Dictionary<string, object>();
+
+        public T GetBlackboard<T>(string key)
+        {
+            return _sharedBlackboard.TryGetValue(key, out var val) ? (T)val : default;
+        }
+
+        public void SetBlackboard<T>(string key, T value)
+        {
+            _sharedBlackboard[key] = value;
+        }
+
+        #endregion
+
         /// <summary>
         /// 程序暂停通知
         /// </summary>
@@ -17,6 +33,7 @@ namespace Snake
 
         public void OnSingletonInit()
         {
+            DontDestroyOnLoad(gameObject);
             RegisterTimeUpdate("root", DelayCallUpdate);
         }
 

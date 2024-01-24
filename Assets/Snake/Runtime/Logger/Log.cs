@@ -1,27 +1,59 @@
-﻿namespace Snake.Logger
+﻿using UnityEngine;
+
+namespace Snake.Logger
 {
     public static class Log
     {
-        private static ILogger _logger;
-
-        public static void Debug(object message, object obj = null)
+        public enum ELevel
         {
-            _logger?.Debug(message, obj);
+            All,
+            Debug,
+            Info,
+            Warn,
+            Error,
         }
 
-        public static void Info(object message, object obj = null)
+        public static ILogger Logger { get; set; }
+        public static ELevel Level { get; set; } = ELevel.All;
+
+        public static void Debug(object message, Object obj = null)
         {
-            _logger?.Info(message, obj);
+            if (Level > ELevel.Debug)
+            {
+                return;
+            }
+
+            Logger?.Debug(message, obj);
         }
 
-        public static void Warn(object message, object obj = null)
+        public static void Info(object message, Object obj = null)
         {
-            _logger?.Warn(message, obj);
+            if (Level > ELevel.Info)
+            {
+                return;
+            }
+
+            Logger?.Info(message, obj);
         }
 
-        public static void Error(object message, object obj = null)
+        public static void Warn(object message, Object obj = null)
         {
-            _logger?.Error(message, obj);
+            if (Level > ELevel.Warn)
+            {
+                return;
+            }
+
+            Logger?.Warn(message, obj);
+        }
+
+        public static void Error(object message, Object obj = null)
+        {
+            if (Level > ELevel.Error)
+            {
+                return;
+            }
+
+            Logger?.Error(message, obj);
         }
     }
 }
